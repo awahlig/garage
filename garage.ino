@@ -1,4 +1,4 @@
-#include <WiFiNINA.h>
+#include <WiFiS3.h>
 #include <ArduinoHA.h>
 
 #include "secrets.h"
@@ -7,45 +7,50 @@ WiFiClient client;
 HADevice device;
 HAMqtt mqtt(client, device);
 
-HAButton lift1("lift1");
-HAButton lift2("lift2");
-HABinarySensor homeLink1("homeLink1");
-HABinarySensor homeLink2("homeLink2");
+HAButton relay1("relay1");
+HAButton relay2("relay2");
+HAButton relay3("relay3");
+
+HABinarySensor remote1("remote1");
+HABinarySensor remote2("remote2");
 
 void setup() {
   WiFi.setHostname("garage");
+  connectToWiFi();
 
   // GPIO pins
-  pinMode(1, OUTPUT);
-  pinMode(2, OUTPUT);
-  pinMode(A1, INPUT_PULLUP);
-  pinMode(A2, INPUT_PULLUP);
+  pinMode(RELAY1_PIN, OUTPUT);
+  pinMode(RELAY2_PIN, OUTPUT);
+  pinMode(RELAY3_PIN, OUTPUT);
+  pinMode(REMOTE1_PIN, INPUT_PULLUP);
+  pinMode(REMOTE2_PIN, INPUT_PULLUP);
 
   // HA Device
   uint8_t mac[6];
   WiFi.macAddress(mac);
   device.setUniqueId(mac, sizeof(mac));
   device.enableExtendedUniqueIds();
-  device.setName("Garage");
-  device.setSoftwareVersion("1.0.1");
-  device.setManufacturer("Arkadiusz Wahlig");
-  device.setModel("G1");
+  device.setManufacturer(DEVICE_MANUFACTURER);
+  device.setModel(DEVICE_MODEL);
+  device.setSoftwareVersion(DEVICE_VERSION);
+  device.setName(DEVICE_NAME);
 
-  // HA Lift buttons
-  lift1.setName("Lift Enter");
-  lift1.setIcon("mdi:garage-variant");
-  lift1.onCommand(onLift1Pressed);
-  lift2.setName("Lift Leave");
-  lift2.setIcon("mdi:arrow-down");
-  lift2.onCommand(onLift2Pressed);
+  // HA Relay buttons
+  relay1.setName(RELAY1_NAME);
+  relay1.setIcon(RELAY1_ICON);
+  relay1.onCommand(onRelay1Pressed);
+  relay2.setName(RELAY2_NAME);
+  relay2.setIcon(RELAY2_ICON);
+  relay2.onCommand(onRelay2Pressed);
+  relay3.setName(RELAY3_NAME);
+  relay3.setIcon(RELAY3_ICON);
+  relay3.onCommand(onRelay3Pressed);
 
-  // HA HomeLink sensors
-  homeLink1.setName("HomeLink A");
-  homeLink1.setIcon("mdi:alpha-a-circle");
-  homeLink2.setName("HomeLink B");
-  homeLink2.setIcon("mdi:alpha-b-circle");
-
-  connectToWiFi();
+  // HA remote sensors
+  remote1.setName(REMOTE1_NAME);
+  remote1.setIcon(REMOTE1_ICON);
+  remote2.setName(REMOTE2_NAME);
+  remote2.setIcon(REMOTE2_ICON);
 
   mqtt.begin(MQTT_BROKER_ADDR, MQTT_USERNAME, MQTT_PASSWORD);
 
@@ -57,8 +62,8 @@ void loop() {
     connectToWiFi();
   }
 
-  homeLink1.setState(digitalRead(A1) == LOW);
-  homeLink2.setState(digitalRead(A2) == LOW);
+  remote1.setState(digitalRead(REMOTE1_PIN) == LOW);
+  remote2.setState(digitalRead(REMOTE2_PIN) == LOW);
 
   mqtt.loop();
 }
@@ -86,14 +91,18 @@ void connectToWiFi() {
 
 void pulseHigh(pin_size_t pin) {
   digitalWrite(pin, HIGH);
-  delay(250);
+  delay(PULSE_DELAY);
   digitalWrite(pin, LOW);
 }
 
-void onLift1Pressed(HAButton* sender) {
-  pulseHigh(1);
+void onRelay1Pressed(HAButton* sender) {
+  pulseHigh(RELAY1_PIN);
 }
 
-void onLift2Pressed(HAButton* sender) {
-  pulseHigh(2);
+void onRelay2Pressed(HAButton* sender) {
+  pulseHigh(RELAY2_PIN);
+}
+
+void onRelay3Pressed(HAButton* sender) {
+  pulseHigh(RELAY3_PIN);
 }
